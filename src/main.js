@@ -69,10 +69,6 @@ function wasmRender() {
 }
 
 async function main() {
-    // Fetch the .wasm file
-    const bytes = await fetch("./../wasm/module.wasm").then(x => x.arrayBuffer());
-    // Create the WASM module based on the loaded file
-    const compiled = new WebAssembly.Module(bytes);
     // Define the WASM imports, including the created memory
     const imports = {
         env: {
@@ -81,8 +77,9 @@ async function main() {
         }
     };
 
-    // Crate the module instance
-    wasm = new WebAssembly.Instance(compiled, imports).exports;
+    // Compiles an instantiate the .wasm module, asynchronously thus not requiring a worker thread to load it
+    const instance = await WebAssembly.instantiateStreaming(fetch("./../wasm/module.wasm"), imports);
+    wasm = instance.instance.exports;
 
     // Schedule the first frame
     requestAnimationFrame(render);
