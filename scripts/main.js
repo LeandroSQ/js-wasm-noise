@@ -31,6 +31,7 @@ const buffer = new Uint8ClampedArray(memory.buffer);
 const imageData = ctx.createImageData(width, height);
 let wasm = null;
 
+// Functions
 function render(startFrameTime) {
     // Calculate the frame gap length
     const frameLength = startFrameTime - lastFrameTime;
@@ -68,7 +69,22 @@ function wasmRender() {
     ctx.putImageData(imageData, 0, 0);
 }
 
-async function main() {
+/**
+ * This function resolves the path for a given file.
+ * Fixing relative path issues on github pages
+ *
+ * @param {string} file
+ * @return {string}
+ */
+function resolveFilePath(file) {
+    const locationRoot = window.location.href.indexOf("http://localhost:")
+			? window.location.href
+			: window.location.pathname.substring(0, window.location.pathname.lastIndexOf("/"));
+
+    return locationRoot + file;
+}
+
+async function loadWasmModule() {
     // Define the WASM imports, including the created memory
     const imports = {
         env: {
@@ -78,11 +94,11 @@ async function main() {
     };
 
     // Compiles an instantiate the .wasm module, asynchronously thus not requiring a worker thread to load it
-    const instance = await WebAssembly.instantiateStreaming(fetch("./../wasm/module.wasm"), imports);
+    const wasmFile = fetch(resolveFilePath("/wasm/module.wasm"));
+    const instance = await WebAssembly.instantiateStreaming(wasmFile, imports);
     wasm = instance.instance.exports;
-
-    // Schedule the first frame
-    requestAnimationFrame(render);
 }
 
-main();
+// Loads the wasm module and then schedule the first frame
+loadWasmModule()
+    .then(x => requestAnimationFrame(render));
